@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Model Task Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --warning: #f9c74f;
+            --danger: #f94144;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --card-bg: #ffffff;
+            --header-bg: #4cc9f0;
+            --sidebar-bg: #3a0ca3;
+            --command-bg: #212529;
+        }
+        
+        .dark-mode {
+            --light: #212529;
+            --dark: #f8f9fa;
+            --card-bg: #2d3748;
+            --border: #4a5568;
+            --header-bg: #3a0ca3;
+            --sidebar-bg: #2d3748;
+            --command-bg: #1a202c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        header {
+            background: linear-gradient(120deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-icon {
+            padding: 8px;
+        }
+        
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .view-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .view-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .view-btn:hover, .view-btn.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .view-btn.active {
+            border-left: 4px solid var(--accent);
+        }
+        
+        .main-content {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .view-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+        
+        .view-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .task-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .task-card.high-priority {
+            border-left-color: var(--danger);
+        }
+        
+        .task-card.medium-priority {
+            border-left-color: var(--warning);
+        }
+        
+        .task-card.low-priority {
+            border-left-color: var(--success);
+        }
+        
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .task-description {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .command-bar {
+            background-color: var(--command-bg);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .command-input {
+            flex-grow: 1;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 6px;
+            color: white;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .command-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .command-hint {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .kanban-column {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .kanban-header {
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .calendar-view {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        
+        .calendar-day {
+            min-height: 100px;
+            background-color: var(--card-bg);
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .day-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        
+        .calendar-task {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .tag-work {
+            background-color: #4cc9f0;
+            color: white;
+        }
+        
+        .tag-personal {
+            background-color: #f9c74f;
+            color: black;
+        }
+        
+        .tag-urgent {
+            background-color: #f94144;
+            color: white;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+            
+            .calendar-view {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-tasks"></i>
+            <span>MultiTask</span>
+        </div>
+        <div class="header-controls">
+            <button class="btn btn-icon" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="btn">
+                <i class="fas fa-user"></i>
+                <span>Login</span>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <aside class="sidebar">
+            <h3>Views</h3>
+            <div class="view-selector">
+                <button class="view-btn active" data-view="list">
+                    <i class="fas fa-list"></i>
+                    <span>List View</span>
+                </button>
+                <button class="view-btn" data-view="board">
+                    <i class="fas fa-th-large"></i>
+                    <span>Board View</span>
+                </button>
+                <button class="view-btn" data-view="calendar">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar View</span>
+                </button>
+                <button class="view-btn" data-view="priority">
+                    <i class="fas fa-flag"></i>
+                    <span>Priority View</span>
+                </button>
+            </div>
+            
+            <h3>Filters</h3>
+            <div class="view-selector">
+                <button class="view-btn">
+                    <i class="fas fa-work"></i>
+                    <span>Work</span>
+                </button>
+                <button class="view-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Personal</span>
+                </button>
+                <button class="view-btn">
+                    <i class="fas fa-fire"></i>
+                    <span>Urgent</span>
+                </button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="view-container active" id="list-view">
+                <div class="view-header">
+                    <h2>List View</h2>
+                    <button class="btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
+                </div>
+                
+                <div class="task-grid">
+                    <div class="task-card high-priority">
+                        <div class="task-title">Complete project proposal</div>
+                        <div class="task-description">Finish the project proposal document and send to client for review</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> Tomorrow</span>
+                            <span class="tag tag-work">Work</span>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-icon"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card medium-priority">
+                        <div class="task-title">Team meeting</div>
+                        <div class="task-description">Weekly team sync to discuss progress and blockers</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> Fri 10:00 AM</span>
+                            <span class="tag tag-work">Work</span>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-icon"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card low-priority">
+                        <div class="task-title">Buy groceries</div>
+                        <div class="task-description">Milk, eggs, bread, fruits, and vegetables</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> This weekend</span>
+                            <span class="tag tag-personal">Personal</span>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-icon"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card high-priority">
+                        <div class="task-title">Fix critical bug in production</div>
+                        <div class="task-description">Address the authentication issue reported by users</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> ASAP</span>
+                            <span class="tag tag-urgent">Urgent</span>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-icon"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-icon"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="view-container" id="board-view">
+                <div class="view-header">
+                    <h2>Board View</h2>
+                    <button class="btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
+                </div>
+                
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <div class="kanban-header">
+                            <span>To Do</span>
+                            <span class="count">3</span>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-title">Research competitors</div>
+                            <div class="task-description">Analyze similar products in the market</div>
+                            <div class="task-meta">
+                                <span class="tag tag-work">Work</span>
+                            </div>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-title">Schedule dentist appointment</div>
+                            <div class="task-meta">
+                                <span class="tag tag-personal">Personal</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="kanban-column">
+                        <div class="kanban-header">
+                            <span>In Progress</span>
+                            <span class="count">2</span>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-title">Complete project proposal</div>
+                            <div class="task-description">Finish the project proposal document</div>
+                            <div class="task-meta">
+                                <span class="tag tag-work">Work</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="kanban-column">
+                        <div class="kanban-header">
+                            <span>Done</span>
+                            <span class="count">4</span>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-title">Create project plan</div>
+                            <div class="task-meta">
+                                <span class="tag tag-work">Work</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="view-container" id="calendar-view">
+                <div class="view-header">
+                    <h2>Calendar View</h2>
+                    <button class="btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
+                </div>
+                
+                <div class="calendar-view">
+                    <div class="calendar-day">
+                        <div class="day-header">Mon</div>
+                        <div class="calendar-task">Team meeting</div>
+                        <div class="calendar-task">Review PRs</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Tue</div>
+                        <div class="calendar-task">Project deadline</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Wed</div>
+                        <div class="calendar-task">Client call</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Thu</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Fri</div>
+                        <div class="calendar-task">Sprint planning</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Sat</div>
+                        <div class="calendar-task">Buy groceries</div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-header">Sun</div>
+                        <div class="calendar-task">Weekly review</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="view-container" id="priority-view">
+                <div class="view-header">
+                    <h2>Priority View</h2>
+                    <button class="btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
+                </div>
+                
+                <div class="task-grid">
+                    <div class="task-card high-priority">
+                        <div class="task-title">Fix critical bug in production</div>
+                        <div class="task-description">Address the authentication issue reported by users</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> ASAP</span>
+                            <span class="tag tag-urgent">Urgent</span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card high-priority">
+                        <div class="task-title">Complete project proposal</div>
+                        <div class="task-description">Finish the project proposal document and send to client for review</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> Tomorrow</span>
+                            <span class="tag tag-work">Work</span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card medium-priority">
+                        <div class="task-title">Team meeting</div>
+                        <div class="task-description">Weekly team sync to discuss progress and blockers</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> Fri 10:00 AM</span>
+                            <span class="tag tag-work">Work</span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-card low-priority">
+                        <div class="task-title">Buy groceries</div>
+                        <div class="task-description">Milk, eggs, bread, fruits, and vegetables</div>
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> This weekend</span>
+                            <span class="tag tag-personal">Personal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="command-bar">
+        <div class="command-hint">
+            <i class="fas fa-terminal"></i>
+        </div>
+        <input type="text" class="command-input" placeholder="Type a command (e.g., add task, filter by work, switch to board)">
+        <button class="btn btn-icon">
+            <i class="fas fa-question"></i>
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // View switching
+            const viewButtons = document.querySelectorAll('.view-btn');
+            const viewContainers = document.querySelectorAll('.view-container');
+            
+            viewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const view = this.dataset.view;
+                    
+                    // Update active button
+                    viewButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show selected view
+                    viewContainers.forEach(container => {
+                        container.classList.remove('active');
+                        if (container.id === `${view}-view`) {
+                            container.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const icon = themeToggle.querySelector('i');
+                if (document.body.classList.contains('dark-mode')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            });
+            
+            // Command interface
+            const commandInput = document.querySelector('.command-input');
+            commandInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const command = this.value.trim().toLowerCase();
+                    this.value = '';
+                    
+                    // Process commands
+                    if (command.startsWith('switch to ')) {
+                        const view = command.replace('switch to ', '');
+                        const viewButton = document.querySelector(`.view-btn[data-view="${view}"]`);
+                        if (viewButton) {
+                            viewButton.click();
+                        }
+                    } else if (command === 'help') {
+                        alert('Available commands:\n- switch to [list|board|calendar|priority]\n- add task\n- filter by [work|personal|urgent]\n- dark mode\n- light mode');
+                    } else if (command === 'dark mode') {
+                        document.body.classList.add('dark-mode');
+                        themeToggle.querySelector('i').classList.remove('fa-moon');
+                        themeToggle.querySelector('i').classList.add('fa-sun');
+                    } else if (command === 'light mode') {
+                        document.body.classList.remove('dark-mode');
+                        themeToggle.querySelector('i').classList.remove('fa-sun');
+                        themeToggle.querySelector('i').classList.add('fa-moon');
+                    } else if (command === 'add task') {
+                        alert('Add task functionality would open here');
+                    } else {
+                        alert(`Command not recognized: ${command}. Type "help" for available commands.`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
